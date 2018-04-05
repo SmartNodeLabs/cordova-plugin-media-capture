@@ -82,6 +82,7 @@ public class Capture extends CordovaPlugin {
 
     private int numPics;                            // Number of pictures before capture activity
     private Uri imageUri;
+    private File videoDir;
 
 //    public void setContext(Context mCtx)
 //    {
@@ -294,17 +295,34 @@ public class Capture extends CordovaPlugin {
         if(cameraPermissionInManifest && !PermissionHelper.hasPermission(this, Manifest.permission.CAMERA)) {
             PermissionHelper.requestPermission(this, req.requestCode, Manifest.permission.CAMERA);
         } else {
-            long mSeconds = System.currentTimeMillis();
-            File mediaFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/video_captured_" + mSeconds + ".mp4");
+            File videosDir = new File(Environment.getExternalStorageDirectory() + File.separator + ".tiketi" + File.separator);
+
+            if (!videosDir.exists()) {
+                videosDir.mkdirs();
+
+                try {
+                    File nomediaFile = new File(videosDir, ".nomedia");
+                    nomediaFile.createNewFile();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            String fname = "video_capture_" + System.currentTimeMillis() + ".mp4";
+
+            videoDir = new File(videosDir, fname);
+
             Intent intent = new Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
-            Uri videoUri = Uri.fromFile(mediaFile);
+
+            Uri videoUri = Uri.fromFile(videoDir);
 
             intent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri);
 
-            if(Build.VERSION.SDK_INT > 7){
+            if (Build.VERSION.SDK_INT > 7) {
                 intent.putExtra("android.intent.extra.durationLimit", req.duration);
                 intent.putExtra("android.intent.extra.videoQuality", req.quality);
             }
+
             this.cordova.startActivityForResult((CordovaPlugin) this, intent, req.requestCode);
         }
     }
@@ -406,8 +424,7 @@ public class Capture extends CordovaPlugin {
         }
 
         if( data == null){
-            File movie = new File(getTempDirectoryPath(), "Capture.avi");
-            data = Uri.fromFile(movie);
+            data = Uri.fromFile(videoDir);
         }
 
         // create a file object from the uri
